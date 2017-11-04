@@ -1,0 +1,17 @@
+{
+  "name": "update_s3_html",
+  "version": "0.0.1",
+  "description": "a script to update the omg apps page",
+  "main": "index.mjs",
+  "author": "Aubrey Wahl",
+  "license": "MIT",
+  "private": true,
+  "dependencies": {
+    "axios": "^0.17.0",
+    "dotenv": "^4.0.0",
+    "mustache": "^2.3.0"
+  },
+  "scripts": {
+    "gen": "node --experimental-modules index.mjs"
+  }
+}
