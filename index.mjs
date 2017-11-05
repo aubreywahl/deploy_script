@@ -2,28 +2,97 @@ import dotenv from 'dotenv'
 import axios from 'axios'
 import m from 'mustache'
 import fs from 'fs'
+import semver from 'semver'
+import moment from 'moment'
 
 dotenv.config()
-const BITRISE_API_TKN = process.env.BITRISE_API_TKN
+
+const {
+  BITRISE_API_TKN,
+  BITRISE_APP_SLUG,
+  BUILD_TRIGGER_TIMESTAMP,
+  BITRISE_APP_TITLE,
+  BITRISE_GIT_TAG,
+  BITRISE_GIT_COMMIT,
+  BITRISE_GIT_MESSAGE, // the commit message
+  S3_DEPLOY_STEP_EMAIL_READY_URL, // for linking to ios ipa build (only useful for iphones)
+  S3_UPLOAD_STEP_URL, // for linking to android apk build
+} = process.env
+
+
 
 if (!BITRISE_API_TKN) {
   throw new Error("BITRISE_API_TKN not set")
+} else if (!BITRISE_GIT_TAG) {
+  throw new Error("BITRISE_GIT_TAG not set")
 }
 
+const tag_major = semver.major(BITRISE_GIT_TAG)
+const tag_minor = semver.minor(BITRISE_GIT_TAG)
 
-const axe = axios.create({
+// gets properly formated sorting range based on this
+// commit's GIT_TAG. 
+//  e.g. '1.2.x' => '>=1.3.0 <1.4.0'
+const patch_version_range = semver.validRange(`${tag_major}.${tag_minor}.x`)
+
+// to to Array.filter to get all builds with same major and minor
+function bitriseBuildTagFilter(a){
+  return a.status_text === 'success' &&
+         a.tag && 
+         semver.satisfies(a.tag, patch_version_range) 
+}
+
+// pass to Array.sort to get a list of builds, descending by tag, build_number
+function bitriseBuildTagCompare(a,b) {
+  return semver.rcompare(a.tag, b.tag) || b.build_number - a.build_number
+}
+
+const bitrise = axios.create({
   baseURL: 'https://api.bitrise.io/v0.1/',
   headers: {'Authorization': `token ${BITRISE_API_TKN}`}
 })
 
-axe.get('me/apps?limit=2')
-  .then(res => console.log(res.data))
-  .catch(err => console.log(err.response.data))
+async function runStuff() {
+  const buildsRes = await bitrise.get(`apps/${BITRISE_APP_SLUG}/builds`)
+  
+  // get builds with same major and minor in descending order (by patch)
+  const builds = (
+    buildsRes.data.data
+  ).filter( 
+    bitriseBuildTagFilter
+  ).sort(
+    bitriseBuildTagCompare
+  )
+  
+  console.log(builds)
+
+  // console.log(buildsRes.data.data)
+}
+
+
+try {
+  runStuff()
+} catch (e) {
+  console.log(e)
+}
+
+const ios = S3_DEPLOY_STEP_EMAIL_READY_URL ? {
+  url: S3_DEPLOY_STEP_EMAIL_READY_URL,
+} : null
+
+const android = S3_UPLOAD_STEP_URL ? {
+  url: S3_UPLOAD_STEP_URL,
+} : null
 
 const template = fs.readFileSync('template.mst', 'utf8')
 
 const appPage = m.render(template, {
-  test: 'yup'
+  gitTag: `v${semver.clean(BITRISE_GIT_TAG)}`,
+  gitMessage: BITRISE_GIT_MESSAGE,
+  gitCommit: BITRISE_GIT_COMMIT,
+  releaseDate: moment().format("MMM Do YYYY, h:mm:ss a"),
+  ios,
+  android,
 })
 
 fs.writeFile('output.html', appPage)
