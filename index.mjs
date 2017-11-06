@@ -4,8 +4,11 @@ import m from 'mustache'
 import fs from 'fs'
 import semver from 'semver'
 import moment from 'moment'
+import cp from 'child_process'
+import assert from 'assert'
 
 dotenv.config()
+
 
 const {
   BITRISE_API_TKN,
@@ -17,8 +20,17 @@ const {
   BITRISE_GIT_MESSAGE, // the commit message
   S3_DEPLOY_STEP_EMAIL_READY_URL, // for linking to ios ipa build (only useful for iphones)
   S3_UPLOAD_STEP_URL, // for linking to android apk build
+  DISABLE_REAL_ENVMAN, // for testing
 } = process.env
 
+function envman(key, value) {
+  const command =  `envman add --key ${key} --value ${value}`
+  if (DISABLE_REAL_ENVMAN) {
+    console.log(command)
+  } else {
+    cp.execSync(command)
+  }
+}
 
 
 if (!BITRISE_API_TKN) {
@@ -55,9 +67,17 @@ const bitrise = axios.create({
 async function runStuff() {
   const buildsRes = await bitrise.get(`apps/${BITRISE_APP_SLUG}/builds`)
   
+  const bitriseData = buildsRes && buildsRes.data &&buildsRes.data.data
+
+  // sanity check
+  assert(bitriseData)
+  // assert(bitriseData.tag) // prolly should not check this
+  assert(bitriseData.build_number)
+
+
   // get builds with same major and minor in descending order (by patch)
   const builds = (
-    buildsRes.data.data
+    bitriseData
   ).filter( 
     bitriseBuildTagFilter
   ).sort(
@@ -70,11 +90,33 @@ async function runStuff() {
 }
 
 
-try {
-  runStuff()
-} catch (e) {
-  console.log(e)
+async function isNewestRelease() {
+  
+  const buildsRes = await bitrise.get(`apps/${BITRISE_APP_SLUG}/builds`)
+  
+  const bitriseData = buildsRes && buildsRes.data && buildsRes.data.data
+
+  // sanity check
+  assert(bitriseData, "no data fetched")
+  assert(bitriseData[0].build_number, "no build_number, the bitrise api may have changed")
+
+  // get builds with same major and minor in descending order (by patch)
+  const builds = (
+    bitriseData
+  ).filter(
+    (a) => a.status_text === 'success' &&
+           a.tag
+  ).sort(
+    bitriseBuildTagCompare
+  )
+    
+  return semver.gte(BITRISE_GIT_TAG, builds[0].tag)
+
 }
+
+
+
+// runStuff()
 
 const ios = S3_DEPLOY_STEP_EMAIL_READY_URL ? {
   url: S3_DEPLOY_STEP_EMAIL_READY_URL,
@@ -95,6 +137,15 @@ const appPage = m.render(template, {
   android,
 })
 
-fs.writeFile('output.html', appPage)
+fs.writeFileSync('output.html', appPage)
+
+isNewestRelease().then( r => {
+  if (r) {
+    envman('PROMOTE_RESTOCKER_APP', 'TRUE')
+  } else {
+    console.log("nah don't promote this build to the top!")
+  }
+})  
+
 
 // console.log(BITRISE_API_TKN)
