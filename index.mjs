@@ -11,7 +11,7 @@ dotenv.config()
 
 
 function envman(key, value) {
-  const command =  `envman add --key ${key} --value ${value}`
+  const command =  `envman add --key ${key} --value '${value}'`
   if (DISABLE_REAL_ENVMAN) {
     console.log(command)
   } else {
