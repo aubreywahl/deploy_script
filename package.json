@@ -6,6 +6,10 @@
   "author": "Aubrey Wahl",
   "license": "MIT",
   "private": true,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aubreywahl/deploy_script.git"
+  },
   "dependencies": {
     "axios": "^0.17.0",
     "dotenv": "^4.0.0",
