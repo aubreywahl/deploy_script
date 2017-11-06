@@ -10,6 +10,15 @@ import assert from 'assert'
 dotenv.config()
 
 
+function envman(key, value) {
+  const command =  `envman add --key ${key} --value ${value}`
+  if (DISABLE_REAL_ENVMAN) {
+    console.log(command)
+  } else {
+    cp.execSync(command)
+  }
+}
+
 const {
   BITRISE_API_TKN,
   BITRISE_APP_SLUG,
@@ -23,21 +32,13 @@ const {
   DISABLE_REAL_ENVMAN, // for testing
 } = process.env
 
-function envman(key, value) {
-  const command =  `envman add --key ${key} --value ${value}`
-  if (DISABLE_REAL_ENVMAN) {
-    console.log(command)
-  } else {
-    cp.execSync(command)
-  }
-}
-
 
 if (!BITRISE_API_TKN) {
   throw new Error("BITRISE_API_TKN not set")
 } else if (!BITRISE_GIT_TAG) {
   throw new Error("BITRISE_GIT_TAG not set")
 }
+
 
 const tag_major = semver.major(BITRISE_GIT_TAG)
 const tag_minor = semver.minor(BITRISE_GIT_TAG)
@@ -117,35 +118,36 @@ async function isNewestRelease() {
 
 
 // runStuff()
+export default function doIt() {
+  const ios = S3_DEPLOY_STEP_EMAIL_READY_URL ? {
+    url: S3_DEPLOY_STEP_EMAIL_READY_URL,
+  } : null
 
-const ios = S3_DEPLOY_STEP_EMAIL_READY_URL ? {
-  url: S3_DEPLOY_STEP_EMAIL_READY_URL,
-} : null
+  const android = S3_UPLOAD_STEP_URL ? {
+    url: S3_UPLOAD_STEP_URL,
+  } : null
 
-const android = S3_UPLOAD_STEP_URL ? {
-  url: S3_UPLOAD_STEP_URL,
-} : null
+  const template = fs.readFileSync('template.mst', 'utf8')
 
-const template = fs.readFileSync('template.mst', 'utf8')
+  const appPage = m.render(template, {
+    gitTag: `v${semver.clean(BITRISE_GIT_TAG)}`,
+    gitMessage: BITRISE_GIT_MESSAGE,
+    gitCommit: BITRISE_GIT_COMMIT,
+    releaseDate: moment().format("MMM Do YYYY, h:mm:ss a"),
+    ios,
+    android,
+  })
 
-const appPage = m.render(template, {
-  gitTag: `v${semver.clean(BITRISE_GIT_TAG)}`,
-  gitMessage: BITRISE_GIT_MESSAGE,
-  gitCommit: BITRISE_GIT_COMMIT,
-  releaseDate: moment().format("MMM Do YYYY, h:mm:ss a"),
-  ios,
-  android,
-})
+  fs.writeFileSync('output.html', appPage)
 
-fs.writeFileSync('output.html', appPage)
-
-isNewestRelease().then( r => {
-  if (r) {
-    envman('PROMOTE_RESTOCKER_APP', 'TRUE')
-  } else {
-    console.log("nah don't promote this build to the top!")
-  }
-})  
+  isNewestRelease().then( r => {
+    if (r) {
+      envman('PROMOTE_RESTOCKER_APP', 'TRUE')
+    } else {
+      console.log("nah don't promote this build to the top!")
+    }
+  })  
+}
 
 
 // console.log(BITRISE_API_TKN)
