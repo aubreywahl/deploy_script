@@ -143,7 +143,7 @@ export default function doIt() {
   const fn = `${appName}_v${tag_major}-${tag_minor}.html`
   fs.writeFileSync(fn, appPage)
   
-  envman('GENERATED_HTML_FN', appName)
+  envman('GENERATED_HTML_FN', fn)
 
   isNewestRelease().then( r => {
     if (r) {
