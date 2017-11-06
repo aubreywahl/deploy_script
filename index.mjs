@@ -138,11 +138,16 @@ export default function doIt() {
     android,
   })
 
-  fs.writeFileSync('output.html', appPage)
+  const appName = process.argv[2].trim().replace(/\s+/, " ").split(/\s/).join("_")
+
+  const fn = `${appName}_v${tag_major}-${tag_minor}.html`
+  fs.writeFileSync(fn, appPage)
+  
+  envman('GENERATED_HTML_FN', appName)
 
   isNewestRelease().then( r => {
     if (r) {
-      envman('PROMOTE_RESTOCKER_APP', 'TRUE')
+      envman('PROMOTE_APP', 'TRUE')
     } else {
       console.log("nah don't promote this build to the top!")
     }
