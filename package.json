@@ -1,5 +1,5 @@
 {
-  "name": "update_s3_html",
+  "name": "deploy_script",
   "version": "0.0.1",
   "description": "a script to update the omg apps page",
   "main": "index.mjs",
