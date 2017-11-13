@@ -112,7 +112,8 @@ async function isNewestRelease() {
     bitriseBuildTagCompare
   )
     
-  return semver.gte(BITRISE_GIT_TAG, builds[0].tag)
+  return (semver.prelease(BITRISE_GIT_TAG) !== null) && 
+         semver.gte(BITRISE_GIT_TAG, builds[0].tag)
 
 }
 
