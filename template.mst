@@ -67,6 +67,11 @@
   </div>
 
   <div class="main">
+    
+    {{#isPrerelease}}
+      <h2 style="color: red;">warning: this is a development build!</h2>
+    {{/isPrerelease}}
+    
     <h2>Release Notes</h1>
     <p>commit {{gitCommit}}</p>
     <p>{{gitMessage}}</p>

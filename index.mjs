@@ -112,8 +112,7 @@ async function isNewestRelease() {
     bitriseBuildTagCompare
   )
     
-  return (semver.prelease(BITRISE_GIT_TAG) !== null) && 
-         semver.gte(BITRISE_GIT_TAG, builds[0].tag)
+  return semver.gte(BITRISE_GIT_TAG, builds[0].tag)
 
 }
 
@@ -131,24 +130,31 @@ export default function doIt() {
 
   const template = fs.readFileSync('template.mst', 'utf8')
 
+  const isPrerelease = semver.prerelease(BITRISE_GIT_TAG)
+
   const appPage = m.render(template, {
     gitTag: `v${semver.clean(BITRISE_GIT_TAG)}`,
     gitMessage: BITRISE_GIT_MESSAGE,
     gitCommit: BITRISE_GIT_COMMIT,
     releaseDate: moment().format("MMM Do YYYY, h:mm:ss a"),
+    isPrerelease,
     ios,
     android,
   })
 
   const appName = process.argv[2].trim().replace(/\s+/, " ").split(/\s/).join("_")
 
-  const fn = `${appName}_v${tag_major}-${tag_minor}-${tag_patch}.html`
+  const prereleaseDecoration = isPrerelease ? `_${isPrerelease.join('-')}` : ''
+
+  const fn = `${appName}_v${tag_major}-${tag_minor}-${tag_patch}${prereleaseDecoration}.html`
   fs.writeFileSync(fn, appPage)
   
   envman('GENERATED_HTML_FN', fn)
 
+
+  // hng that kinda sux
   isNewestRelease().then( r => {
-    if (r) {
+    if (r && !isPrerelease) {
       envman('PROMOTE_APP', 'TRUE')
     } else {
       console.log("nah don't promote this build to the top!")
