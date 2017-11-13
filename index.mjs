@@ -42,6 +42,7 @@ if (!BITRISE_API_TKN) {
 
 const tag_major = semver.major(BITRISE_GIT_TAG)
 const tag_minor = semver.minor(BITRISE_GIT_TAG)
+const tag_minor = semver.patch(BITRISE_GIT_TAG)
 
 // gets properly formated sorting range based on this
 // commit's GIT_TAG. 
@@ -140,7 +141,7 @@ export default function doIt() {
 
   const appName = process.argv[2].trim().replace(/\s+/, " ").split(/\s/).join("_")
 
-  const fn = `${appName}_v${tag_major}-${tag_minor}.html`
+  const fn = `${appName}_v${tag_major}-${tag_minor}-${tag_patch}.html`
   fs.writeFileSync(fn, appPage)
   
   envman('GENERATED_HTML_FN', fn)
