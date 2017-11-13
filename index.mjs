@@ -42,7 +42,7 @@ if (!BITRISE_API_TKN) {
 
 const tag_major = semver.major(BITRISE_GIT_TAG)
 const tag_minor = semver.minor(BITRISE_GIT_TAG)
-const tag_minor = semver.patch(BITRISE_GIT_TAG)
+const tag_patch = semver.patch(BITRISE_GIT_TAG)
 
 // gets properly formated sorting range based on this
 // commit's GIT_TAG. 
