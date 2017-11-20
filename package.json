@@ -15,7 +15,8 @@
     "dotenv": "^4.0.0",
     "moment": "^2.19.1",
     "mustache": "^2.3.0",
-    "semver": "^5.4.1"
+    "semver": "^5.4.1",
+    "showdown": "^1.8.2"
   },
   "scripts": {
     "gen": "node --experimental-modules test.mjs"

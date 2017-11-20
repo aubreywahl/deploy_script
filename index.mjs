@@ -9,6 +9,9 @@ import assert from 'assert'
 
 dotenv.config()
 
+import showdown from 'showdown'
+// const showdown = require('showdown')
+let shdwn = new showdown.Converter()
 
 function envman(key, value) {
   const command =  `envman add --key ${key} --value '${value}'`
@@ -31,7 +34,6 @@ const {
   S3_UPLOAD_STEP_URL, // for linking to android apk build
   DISABLE_REAL_ENVMAN, // for testing
 } = process.env
-
 
 if (!BITRISE_API_TKN) {
   throw new Error("BITRISE_API_TKN not set")
@@ -134,7 +136,7 @@ export default function doIt() {
 
   const appPage = m.render(template, {
     gitTag: `v${semver.clean(BITRISE_GIT_TAG)}`,
-    gitMessage: BITRISE_GIT_MESSAGE,
+    gitMessage: shdwn.makeHtml(BITRISE_GIT_MESSAGE),
     gitCommit: BITRISE_GIT_COMMIT,
     releaseDate: moment().format("MMM Do YYYY, h:mm:ss a"),
     isPrerelease,
