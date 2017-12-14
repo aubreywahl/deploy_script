@@ -33,6 +33,7 @@ const {
   S3_DEPLOY_STEP_EMAIL_READY_URL, // for linking to ios ipa build (only useful for iphones)
   S3_UPLOAD_STEP_URL, // for linking to android apk build
   DISABLE_REAL_ENVMAN, // for testing
+  SLACK_MSG_ICON,
 } = process.env
 
 if (!BITRISE_API_TKN) {
@@ -134,6 +135,8 @@ export default function doIt() {
 
   const isPrerelease = semver.prerelease(BITRISE_GIT_TAG)
 
+  console.log(SLACK_MSG_ICON)
+
   const appPage = m.render(template, {
     gitTag: `v${semver.clean(BITRISE_GIT_TAG)}`,
     gitMessage: shdwn.makeHtml(BITRISE_GIT_MESSAGE),
@@ -142,6 +145,7 @@ export default function doIt() {
     isPrerelease,
     ios,
     android,
+    iconUrl: SLACK_MSG_ICON,
   })
 
   const appName = process.argv[2].trim().replace(/\s+/, " ").split(/\s/).join("_")

@@ -58,7 +58,7 @@
 <body>
   <div class='header'>
     <div class='test1'> 
-      <img src="https://s3-us-west-1.amazonaws.com/ohmygreen/restocking_app/ra_icon.png" height="100px">
+      <img src="{{iconUrl}}" height="100px">
     </div>
     <div class='test2'>
       <h2> Restocker App {{gitTag}} </h1>
