@@ -110,7 +110,8 @@ async function isNewestRelease() {
     bitriseData
   ).filter(
     (a) => a.status_text === 'success' &&
-           a.tag
+           a.tag &&
+           !semver.prerelease(a.tag)
   ).sort(
     bitriseBuildTagCompare
   )
