@@ -1,7 +1,7 @@
 <html>
 <head>
   <title>
-    Restocking App
+    {{appName}}
   </title>
   <style type="text/css">
   body {
@@ -61,7 +61,7 @@
       <img src="{{iconUrl}}" height="100px">
     </div>
     <div class='test2'>
-      <h2> Restocker App {{gitTag}} </h1>
+      <h2> {{appName}} {{gitTag}} </h1>
       <h3> released: {{releaseDate}} </h3>
     </div>
   </div>

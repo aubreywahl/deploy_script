@@ -34,6 +34,7 @@ const {
   S3_UPLOAD_STEP_URL, // for linking to android apk build
   DISABLE_REAL_ENVMAN, // for testing
   SLACK_MSG_ICON,
+  APP_NAME,
 } = process.env
 
 if (!BITRISE_API_TKN) {
@@ -115,8 +116,8 @@ async function isNewestRelease() {
   ).sort(
     bitriseBuildTagCompare
   )
-    
-  return semver.gte(BITRISE_GIT_TAG, builds[0].tag)
+
+  return builds && builds.length > 0 ? semver.gte(BITRISE_GIT_TAG, builds[0].tag) : true
 
 }
 
@@ -147,6 +148,7 @@ export default function doIt() {
     ios,
     android,
     iconUrl: SLACK_MSG_ICON,
+    appName: APP_NAME || 'App',
   })
 
   const appName = process.argv[2].trim().replace(/\s+/, " ").split(/\s/).join("_")
