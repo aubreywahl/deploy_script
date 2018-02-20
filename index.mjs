@@ -7,12 +7,56 @@ import moment from 'moment'
 import cp from 'child_process'
 import assert from 'assert'
 
-dotenv.config()
 
-import showdown from 'showdown'
-// const showdown = require('showdown')
+import showdown from 'showdown' // converts markdown to html string
 let shdwn = new showdown.Converter()
 
+
+/*
+ * import our environment variables
+ */
+dotenv.config()
+const {
+  BITRISE_API_TKN,
+  BITRISE_APP_SLUG,
+  BUILD_TRIGGER_TIMESTAMP,
+  BITRISE_APP_TITLE,
+  BITRISE_GIT_TAG,
+  BITRISE_GIT_COMMIT,
+  BITRISE_GIT_MESSAGE,            // the commit message
+  S3_DEPLOY_STEP_EMAIL_READY_URL, // url to ios ipa build
+  S3_UPLOAD_STEP_URL,             // url to android apk build
+  DISABLE_REAL_ENVMAN,            // for testing, should be set to true when in any non-bitrise environment
+  SLACK_MSG_ICON,
+  APP_NAME,
+} = process.env
+
+/*
+ * quit the script if not bitrise token provided
+ */
+if (!BITRISE_API_TKN) {
+  throw new Error("BITRISE_API_TKN not set")
+} else if (!BITRISE_GIT_TAG) {
+  throw new Error("BITRISE_GIT_TAG not set")
+} else if (!APP_NAME || !(APP_NAME.trim().length)) {
+  throw new Error("APP_NAME not set")
+}
+
+
+/*
+ * bitrise api helper
+ */
+const bitrise = axios.create({
+  baseURL: 'https://api.bitrise.io/v0.1/',
+  headers: {'Authorization': `token ${BITRISE_API_TKN}`}
+})
+
+
+/* 
+ * this is an alias to run envman in a bitrise environment.
+ * envman sets environment variables.
+ * see: https://github.com/bitrise-io/envman 
+ */
 function envman(key, value) {
   const command =  `envman add --key ${key} --value '${value}'`
   if (DISABLE_REAL_ENVMAN) {
@@ -22,80 +66,20 @@ function envman(key, value) {
   }
 }
 
-const {
-  BITRISE_API_TKN,
-  BITRISE_APP_SLUG,
-  BUILD_TRIGGER_TIMESTAMP,
-  BITRISE_APP_TITLE,
-  BITRISE_GIT_TAG,
-  BITRISE_GIT_COMMIT,
-  BITRISE_GIT_MESSAGE, // the commit message
-  S3_DEPLOY_STEP_EMAIL_READY_URL, // for linking to ios ipa build (only useful for iphones)
-  S3_UPLOAD_STEP_URL, // for linking to android apk build
-  DISABLE_REAL_ENVMAN, // for testing
-  SLACK_MSG_ICON,
-  APP_NAME,
-} = process.env
 
-if (!BITRISE_API_TKN) {
-  throw new Error("BITRISE_API_TKN not set")
-} else if (!BITRISE_GIT_TAG) {
-  throw new Error("BITRISE_GIT_TAG not set")
-}
-
-
+/* 
+ * extract semver info for this release
+ */
 const tag_major = semver.major(BITRISE_GIT_TAG)
 const tag_minor = semver.minor(BITRISE_GIT_TAG)
 const tag_patch = semver.patch(BITRISE_GIT_TAG)
 
-// gets properly formated sorting range based on this
-// commit's GIT_TAG. 
-//  e.g. '1.2.x' => '>=1.3.0 <1.4.0'
-const patch_version_range = semver.validRange(`${tag_major}.${tag_minor}.x`)
 
-// to to Array.filter to get all builds with same major and minor
-function bitriseBuildTagFilter(a){
-  return a.status_text === 'success' &&
-         a.tag && 
-         semver.satisfies(a.tag, patch_version_range) 
-}
-
-// pass to Array.sort to get a list of builds, descending by tag, build_number
-function bitriseBuildTagCompare(a,b) {
-  return semver.rcompare(a.tag, b.tag) || b.build_number - a.build_number
-}
-
-const bitrise = axios.create({
-  baseURL: 'https://api.bitrise.io/v0.1/',
-  headers: {'Authorization': `token ${BITRISE_API_TKN}`}
-})
-
-async function runStuff() {
-  const buildsRes = await bitrise.get(`apps/${BITRISE_APP_SLUG}/builds`)
-  
-  const bitriseData = buildsRes && buildsRes.data &&buildsRes.data.data
-
-  // sanity check
-  assert(bitriseData)
-  // assert(bitriseData.tag) // prolly should not check this
-  assert(bitriseData.build_number)
-
-
-  // get builds with same major and minor in descending order (by patch)
-  const builds = (
-    bitriseData
-  ).filter( 
-    bitriseBuildTagFilter
-  ).sort(
-    bitriseBuildTagCompare
-  )
-  
-  console.log(builds)
-
-  // console.log(buildsRes.data.data)
-}
-
-
+/*
+ * goes through all previous successful bitrise builds to see
+ * if the current release is the neweset! 
+ * returns true or false
+ */
 async function isNewestRelease() {
   
   const buildsRes = await bitrise.get(`apps/${BITRISE_APP_SLUG}/builds`)
@@ -106,25 +90,26 @@ async function isNewestRelease() {
   assert(bitriseData, "no data fetched")
   assert(bitriseData[0].build_number, "no build_number, the bitrise api may have changed")
 
-  // get builds with same major and minor in descending order (by patch)
+  /* 
+   * list of previous builds with same major and minor in 
+   * descending order (by patch number)
+   */  
   const builds = (
     bitriseData
-  ).filter(
-    (a) => a.status_text === 'success' &&
-           a.tag &&
-           !semver.prerelease(a.tag)
-  ).sort(
-    bitriseBuildTagCompare
+  ).filter((a) => 
+    a.status_text === 'success' &&
+    a.tag &&
+    !semver.prerelease(a.tag)
+  ).sort((a,b) => 
+    semver.rcompare(a.tag, b.tag) || b.build_number - a.build_number
   )
 
   return builds && builds.length > 0 ? semver.gte(BITRISE_GIT_TAG, builds[0].tag) : true
 
 }
 
+async function main() {
 
-
-// runStuff()
-export default function doIt() {
   const ios = S3_DEPLOY_STEP_EMAIL_READY_URL ? {
     url: S3_DEPLOY_STEP_EMAIL_READY_URL,
   } : null
@@ -137,9 +122,12 @@ export default function doIt() {
 
   const isPrerelease = semver.prerelease(BITRISE_GIT_TAG)
 
-  console.log(SLACK_MSG_ICON)
 
-  const appPage = m.render(template, {
+  /*
+   * generate html string using mustache
+   */
+  const appReleaseHtml = m.render(template, {
+    appName: APP_NAME,
     gitTag: `v${semver.clean(BITRISE_GIT_TAG)}`,
     gitMessage: shdwn.makeHtml(BITRISE_GIT_MESSAGE),
     gitCommit: BITRISE_GIT_COMMIT,
@@ -148,28 +136,68 @@ export default function doIt() {
     ios,
     android,
     iconUrl: SLACK_MSG_ICON,
-    appName: APP_NAME || 'App',
   })
 
-  const appName = process.argv[2].trim().replace(/\s+/, " ").split(/\s/).join("_")
+  const appName = APP_NAME.trim().replace(/\s+/, " ").split(/\s/).join("_")
 
   const prereleaseDecoration = isPrerelease ? `_${isPrerelease.join('-')}` : ''
 
+  /*
+   * name of the generated html file
+   */
   const fn = `${appName}_v${tag_major}-${tag_minor}-${tag_patch}${prereleaseDecoration}.html`
-  fs.writeFileSync(fn, appPage)
+
+  /*
+   * write the html file to disk
+   */
+  fs.writeFileSync(fn, appReleaseHtml)
   
-  envman('GENERATED_HTML_FN', fn)
 
-
-  // hng that kinda sux
-  isNewestRelease().then( r => {
+  const shouldPromoteApp = await isNewestRelease().then( r => {
     if (r && !isPrerelease) {
-      envman('PROMOTE_APP', 'TRUE')
+      return true
     } else {
       console.log("nah don't promote this build to the top!")
+      return false
     }
   })  
+
+
+
+  /* 
+   * ===========================
+   * THIS STEP IS VERY IMPORTANT !!!!!
+   * ===========================
+   * sets crucial environment variables used in other parts of bitrise script
+   *  GENERATED_HTML_FN: the filename of the generated html file
+   *  PROMOTE_APP:       if set, the bitrise script will repace app.ohmygreen.com 
+   *                     link the generated html :)
+   */
+  envman('GENERATED_HTML_FN', fn)
+  if (shouldPromoteApp) {
+    envman('PROMOTE_APP', 'TRUE')
+  }
+
+  let targetBinary;
+  if (isPrerelease) {
+    const prereleaseTokens =  semver.prerelease(BITRISE_GIT_TAG)
+    if (prereleaseTokens.length < 2) {
+      throw new Error(`ERR: poorly formatted GIT TAG for prerelease: ${BITRISE_GIT_TAG}, must look like v<maj>.<min>.<patch>-<set>.<prerelease>, e.g. v1.2.3-beta.0`)
+    }
+    const preSet = prereleaseTokens[0]
+    const prereleaseVersion = prereleaseTokens[1]
+
+    let prereleaseTarget = prereleaseVersion === 0 ? prereleaseVersion : prereleaseVersion - 1
+    targetBinary = `v${tag_major}.${tag_minor}.${tag_patch}-${preSet}.${prereleaseTarget}`
+
+  } else {
+    targetBinary = `>=v${tag_major}.${tag_minor}.0 <v${tag_major}.${tag_minor}.${tag_patch}`
+  }
+  envman('TARGET_BINARY', targetBinary)
+
+  console.log('targetBinary:', targetBinary)
+  console.log("shouldPromote, fn:", shouldPromoteApp, "," , fn)
+
 }
 
-
-// console.log(BITRISE_API_TKN)
+main()

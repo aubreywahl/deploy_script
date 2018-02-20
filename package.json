@@ -19,6 +19,6 @@
     "showdown": "^1.8.2"
   },
   "scripts": {
-    "gen": "node --experimental-modules test.mjs"
+    "genAppHtmlAndSetTargetBinary": "node --experimental-modules index.mjs"
   }
 }
