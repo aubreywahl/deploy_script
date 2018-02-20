@@ -172,31 +172,56 @@ async function main() {
    *  GENERATED_HTML_FN: the filename of the generated html file
    *  PROMOTE_APP:       if set, the bitrise script will repace app.ohmygreen.com 
    *                     link the generated html :)
+   *  TARGET_BINARY:     binaries to target for Code Push
+   *                     more info: https://github.com/Microsoft/code-push/tree/a0a043ed65d0e75c68f3d6ba5941d1fa070b56f1/cli#target-binary-version-parameter
    */
-  envman('GENERATED_HTML_FN', fn)
-  if (shouldPromoteApp) {
-    envman('PROMOTE_APP', 'TRUE')
-  }
 
+
+  /* 
+   * determine the target binary for Code Push. 
+   * if is a prerelease build, works like this:
+   *   releasing v1.66.3-beta.3 => target binary "v1.66.3-beta.2",
+   *   releasing v1.66.3-beta.1 => target binary "v1.66.3-beta.0",
+   *   releasing v1.66.3-beta.0 => target binary "v1.66.3-beta.0" (again)
+   *
+   * more info: https://github.com/Microsoft/react-native-code-push/issues/791
+   *            https://github.com/Microsoft/code-push/issues/335
+   *
+   * if is a production build, works like this:
+   *   releasing v1.66.3 => target binary ">=v1.66.0 <v1.66.3"
+   *   releasing v1.66.2 => target binary ">=v1.66.0 <v1.66.2"
+   *   releasing v1.66.1 => target binary ">=v1.66.0 <v1.66.1"
+   *   releasing v1.66.0 => target binary "v1.66.0"
+   */
   let targetBinary;
   if (isPrerelease) {
     const prereleaseTokens =  semver.prerelease(BITRISE_GIT_TAG)
     if (prereleaseTokens.length < 2) {
       throw new Error(`ERR: poorly formatted GIT TAG for prerelease: ${BITRISE_GIT_TAG}, must look like v<maj>.<min>.<patch>-<set>.<prerelease>, e.g. v1.2.3-beta.0`)
     }
-    const preSet = prereleaseTokens[0]
-    const prereleaseVersion = prereleaseTokens[1]
+    const tag_set = prereleaseTokens[0]
+    const tag_prerelease = prereleaseTokens[1]
 
-    let prereleaseTarget = prereleaseVersion === 0 ? prereleaseVersion : prereleaseVersion - 1
-    targetBinary = `v${tag_major}.${tag_minor}.${tag_patch}-${preSet}.${prereleaseTarget}`
+    const prereleaseTarget = tag_prerelease === 0 ? tag_prerelease : tag_prerelease - 1
+    targetBinary = `v${tag_major}.${tag_minor}.${tag_patch}-${tag_set}.${prereleaseTarget}`
 
   } else {
-    targetBinary = `>=v${tag_major}.${tag_minor}.0 <v${tag_major}.${tag_minor}.${tag_patch}`
+    if (tag_patch === 0) {
+      targetBinary = `v${tag_major}.${tag_minor}.0`
+    } else {
+      targetBinary = `>=v${tag_major}.${tag_minor}.0 <v${tag_major}.${tag_minor}.${tag_patch}`
+    }
   }
-  envman('TARGET_BINARY', targetBinary)
 
-  console.log('targetBinary:', targetBinary)
-  console.log("shouldPromote, fn:", shouldPromoteApp, "," , fn)
+
+  envman('TARGET_BINARY', targetBinary)
+  envman('GENERATED_HTML_FN', fn)
+  if (shouldPromoteApp) {
+    envman('PROMOTE_APP', 'TRUE')
+  }
+
+  // console.log('targetBinary:', targetBinary)
+  // console.log("shouldPromote, fn:", shouldPromoteApp, "," , fn)
 
 }
 
