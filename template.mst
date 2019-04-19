@@ -112,6 +112,27 @@
       {{/android}}
 
     </div>
+
+    <div class="app-row">
+      <h1>AppCenter (Coming Soon)</h1>
+      <p>The HApp and the DApp will soon be managed by AppCenter! You can get ready by creating an account with your OMG email.</p>
+
+        <ul>
+          <li><a href="https://install.appcenter.ms" id="text">AppCenter Portal</a></li>
+          <li>
+            <a href="https://docs.microsoft.com/en-us/appcenter/distribution/testers/testing-android"
+               id="text">
+              Android Guide
+            </a>
+          </li>
+          <li>
+            <a href="https://docs.microsoft.com/en-us/appcenter/distribution/testers/testing-ios"
+               id="text">
+              iOS Guide
+            </a>
+          </li>
+        </ul>
+    </div> 
   </div>
 
 </body>
