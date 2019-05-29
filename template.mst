@@ -76,63 +76,59 @@
     <p>commit {{gitCommit}}</p>
     {{{gitMessage}}}
 
+    {{#isHappiness}}
+      <div class="app-row">
+        <h1>AppCenter</h1>
+        <p>The HApp is managed through Microsoft AppCenter, go to AppCenter Portal to download the latest builds</p>
 
-    {{#historical}}
-      <!-- TODO: https://codepen.io/huange/pen/pJqEMj -->
-      there should be some history I guess
-    {{/historical}}
+          <ul>
+            <li><a href="https://install.appcenter.ms" id="text">AppCenter Portal</a></li>
+            <li>
+              <a href="https://docs.microsoft.com/en-us/appcenter/distribution/testers/testing-android"
+                 id="text">
+                Android Guide
+              </a>
+            </li>
+            <li>
+              <a href="https://docs.microsoft.com/en-us/appcenter/distribution/testers/testing-ios"
+                 id="text">
+                iOS Guide
+              </a>
+            </li>
+          </ul>
+      </div>
+    {{/isHappiness}}
+    {{^isHappiness}}
+      <div class="app-row">
+        <h1>iOS</h1>
 
+        {{#ios}}
+          <ul>
+            <li><a href="{{url}}" id="text">Install {{gitTag}}</a></li>
+          </ul>
+        {{/ios}}
 
-    <div class="app-row">
-      <h1>iOS</h1>
+        {{^ios}}
+          <p> No iOS build for this one. </p>
+        {{/ios}}
 
-      {{#ios}}
-        <ul>
-          <li><a href="{{url}}" id="text">Install {{gitTag}}</a></li>
-        </ul>
-      {{/ios}}
+      </div>
+      
+      <div class="app-row">
+        <h1>Android</h1>
 
-      {{^ios}}
-        <p> No iOS build for this one. </p>
-      {{/ios}}
+        {{#android}}
+          <ul>
+            <li><a href="{{url}}" id="text">Download {{gitTag}}</a></li>
+          </ul>
+        {{/android}}
 
-    </div>
-    
-    <div class="app-row">
-      <h1>Android</h1>
+        {{^android}}
+          <p> No Android build for this one. </p>
+        {{/android}}
 
-      {{#android}}
-        <ul>
-          <li><a href="{{url}}" id="text">Download {{gitTag}}</a></li>
-        </ul>
-      {{/android}}
-
-      {{^android}}
-        <p> No Android build for this one. </p>
-      {{/android}}
-
-    </div>
-
-    <div class="app-row">
-      <h1>AppCenter (Coming Soon)</h1>
-      <p>The HApp and the DApp will soon be managed by AppCenter! You can get ready by creating an account with your OMG email.</p>
-
-        <ul>
-          <li><a href="https://install.appcenter.ms" id="text">AppCenter Portal</a></li>
-          <li>
-            <a href="https://docs.microsoft.com/en-us/appcenter/distribution/testers/testing-android"
-               id="text">
-              Android Guide
-            </a>
-          </li>
-          <li>
-            <a href="https://docs.microsoft.com/en-us/appcenter/distribution/testers/testing-ios"
-               id="text">
-              iOS Guide
-            </a>
-          </li>
-        </ul>
-    </div> 
+      </div>
+    {{/isHappiness}}
   </div>
 
 </body>
