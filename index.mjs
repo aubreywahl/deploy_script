@@ -123,10 +123,6 @@ async function main() {
 
   const isPrerelease = semver.prerelease(BITRISE_GIT_TAG)
 
-  // NOTE(connor): Yeah, that's some tech debt, but lets move everything to AppCenter and deprecate this repo
-  // before we change bitrise build slugs
-  const isHappiness = BITRISE_APP_SLUG === '62311798cbc9e28b';
-
 
   /*
    * generate html string using mustache
@@ -141,6 +137,7 @@ async function main() {
     ios,
     android,
     iconUrl: SLACK_MSG_ICON,
+    isHappiness: BITRISE_APP_SLUG === '62311798cbc9e28b', // Watup tech debt!
   })
 
   const appName = APP_NAME.trim().replace(/\s+/, " ").split(/\s/).join("_")
