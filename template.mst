@@ -76,7 +76,7 @@
     <p>commit {{gitCommit}}</p>
     {{{gitMessage}}}
 
-    {{#isHappiness}}
+    {{#useAppCenter}}
       <div class="app-row">
         <h1>AppCenter</h1>
         <p>The HApp is managed through Microsoft AppCenter, go to AppCenter Portal to download the latest builds</p>
@@ -97,8 +97,8 @@
             </li>
           </ul>
       </div>
-    {{/isHappiness}}
-    {{^isHappiness}}
+    {{/useAppCenter}}
+    {{^useAppCenter}}
       <div class="app-row">
         <h1>iOS</h1>
 
@@ -128,7 +128,7 @@
         {{/android}}
 
       </div>
-    {{/isHappiness}}
+    {{/useAppCenter}}
   </div>
 
 </body>

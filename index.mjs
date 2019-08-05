@@ -137,7 +137,7 @@ async function main() {
     ios,
     android,
     iconUrl: SLACK_MSG_ICON,
-    isHappiness: BITRISE_APP_SLUG === '62311798cbc9e28b', // Watup tech debt!
+    useAppCenter: BITRISE_APP_SLUG === '62311798cbc9e28b' && !isPrerelease, // Watup tech debt!
   })
 
   const appName = APP_NAME.trim().replace(/\s+/, " ").split(/\s/).join("_")
