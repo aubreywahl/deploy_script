@@ -16,7 +16,7 @@
     "moment": "^2.19.1",
     "mustache": "^2.3.0",
     "semver": "^5.4.1",
-    "showdown": "^1.8.2"
+    "showdown": "^1.9.1"
   },
   "scripts": {
     "genAppHtmlAndSetTargetBinary": "node --experimental-modules index.mjs"
